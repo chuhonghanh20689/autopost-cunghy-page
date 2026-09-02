@@ -2,7 +2,7 @@ import { chromium, Page } from '@playwright/test';
 import path from 'path';
 
 const PROFILE_DIR = path.resolve('./fbpost/.browser-profile');
-const PAGE_NAME = 'Đảo Bánh Quy';
+const PAGE_NAME = 'Cung Hỷ Phát Tài';
 
 async function openProfileMenu(page: Page): Promise<boolean> {
   console.log('\n========================================');

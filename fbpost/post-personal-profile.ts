@@ -460,6 +460,132 @@ async function dismissComposerSuggestions(
   await page.waitForTimeout(600);
 }
 
+/*
+ * Facebook đôi khi hiển thị recommendation thêm nút liên hệ
+ * và che composer hoặc bước đăng bài. Chỉ đóng đúng popup này.
+ */
+async function dismissSpeakWithPeopleDirectlyRecommendation(
+  page: Page
+): Promise<boolean> {
+  const dismissedByDom =
+    await page.evaluate(() => {
+      const titles = [
+        "Speak With People Directly",
+        "Chat directly with customers"
+      ];
+
+      const titleVisible =
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            "h1, h2, h3, h4, div, span"
+          )
+        ).some((element) =>
+          titles.includes(element.textContent?.trim() ?? "") &&
+          element.getClientRects().length > 0
+        );
+
+      if (!titleVisible) {
+        return false;
+      }
+
+      const notNow =
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            'button, [role="button"]'
+          )
+        ).find((element) =>
+          element.textContent?.trim() === "Not now" &&
+          element.getClientRects().length > 0
+        );
+
+      if (!notNow) {
+        return false;
+      }
+
+      notNow.click();
+
+      return true;
+    });
+
+  if (dismissedByDom) {
+    console.log(
+      "💬 Đã đóng gợi ý Chat directly with customers."
+    );
+
+    await page.waitForTimeout(600);
+
+    return true;
+  }
+
+  const title =
+    page
+      .getByText(
+        /Speak With People Directly|Chat directly with customers/i
+      )
+      .last();
+
+  if (
+    !await title
+      .isVisible()
+      .catch(() => false)
+  ) {
+    return false;
+  }
+
+  const textButton =
+    page
+      .getByText(
+        "Not now",
+        { exact: true }
+      )
+      .last();
+
+  if (
+    await textButton
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await textButton.click({
+      timeout: ACTION_TIMEOUT
+    });
+
+    console.log(
+      "💬 Đã đóng gợi ý Chat directly with customers."
+    );
+
+    await page.waitForTimeout(600);
+
+    return true;
+  }
+
+  const roleButton =
+    page
+      .locator(
+        '[role="button"]:has-text("Not now"), button:has-text("Not now")'
+      )
+      .last();
+
+  if (
+    await roleButton
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await roleButton.click({
+      timeout: ACTION_TIMEOUT
+    });
+
+    console.log(
+      "💬 Đã đóng gợi ý Chat directly with customers."
+    );
+
+    await page.waitForTimeout(600);
+
+    return true;
+  }
+
+  return false;
+}
+
 /* ============================================================
    PHOTO / VIDEO
 ============================================================ */
@@ -742,9 +868,22 @@ async function publishPost(
     throw new PostClickUncertainError(reason);
   }
 
+  await page.waitForTimeout(1_500);
+
   const closeDeadline = Date.now() + 30_000;
 
   while (Date.now() < closeDeadline) {
+    const recommendationDismissed =
+      await dismissSpeakWithPeopleDirectlyRecommendation(
+        page
+      );
+
+    if (recommendationDismissed) {
+      await page.waitForTimeout(1_500);
+
+      return;
+    }
+
     const composer = await findComposer(page);
     if (!composer) return;
     await page.waitForTimeout(750);
@@ -791,7 +930,7 @@ async function postOne(
    * Luôn mở Facebook Page thật.
    */
   await page.goto(
-    "https://www.facebook.com/profile.php?id=61565902337879",
+    "https://www.facebook.com/profile.php?id=61568152018103",
     {
       waitUntil:
         "domcontentloaded",
@@ -807,10 +946,18 @@ async function postOne(
     2_500
   );
 
+  await dismissSpeakWithPeopleDirectlyRecommendation(
+    page
+  );
+
   /*
    * Mở composer.
    */
   await openComposer(
+    page
+  );
+
+  await dismissSpeakWithPeopleDirectlyRecommendation(
     page
   );
 
@@ -820,6 +967,10 @@ async function postOne(
   await fillCaption(
     page,
     caption.fullCaption
+  );
+
+  await dismissSpeakWithPeopleDirectlyRecommendation(
+    page
   );
 
   /*
@@ -862,6 +1013,22 @@ async function postOne(
   await publishPost(
     page
   );
+
+  const recommendationDeadline =
+    Date.now() + 10_000;
+
+  while (Date.now() < recommendationDeadline) {
+    const dismissed =
+      await dismissSpeakWithPeopleDirectlyRecommendation(
+        page
+      );
+
+    if (dismissed) {
+      break;
+    }
+
+    await page.waitForTimeout(500);
+  }
 
   console.log(
     "✅ Đã click Post."
@@ -995,7 +1162,7 @@ async function main(): Promise<void> {
      * Check session.
      */
     await page.goto(
-      "https://www.facebook.com/profile.php?id=61565902337879",
+      "https://www.facebook.com/profile.php?id=61568152018103",
       {
         waitUntil:
           "domcontentloaded",
@@ -1090,7 +1257,15 @@ console.log(
       "==========================================\n"
     );
   } finally {
+    console.log(
+      "\n🔒 Đang đóng Facebook browser..."
+    );
+
     await context.close();
+
+    console.log(
+      "✅ Đã đóng Facebook browser."
+    );
   }
 }
 

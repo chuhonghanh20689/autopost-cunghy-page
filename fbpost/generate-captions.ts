@@ -64,12 +64,11 @@ const HISTORY_FILE = path.join(
 ========================================================= */
 
 const FOOTER = `--------------------------------------------
-Đảo bánh quy
+Cung Hỷ Phát Tài
 📞 0859796267
 Zalo: 0945918855
 ADD1: 58 Nam Tràng, Trúc Bạch, Ba Đình, Hà Nội
-ADD2: 444/8/8 Thụy Khuê, Tây Hồ, Hà Nội
-ADD3: 24 Quan Nhân, Thanh Xuân, Hà Nội`;
+`;
 
 /* =========================================================
    TYPES
@@ -483,7 +482,7 @@ Hashtags: ${item.hashtags.join(" ")}`
 
   const prompt = `
 
-Bạn đang viết nội dung Facebook cho shop ĐẢO BÁNH QUY.
+Bạn đang viết nội dung Facebook cho shop CUNG HỶ PHÁT TÀI.
 
 Hãy tạo ${count} caption khác nhau.
 
