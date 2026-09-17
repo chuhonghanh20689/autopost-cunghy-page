@@ -648,9 +648,20 @@ async function main(): Promise<void> {
   );
 
   /*
-   * Chưa tăng nextGroupIndex.
-   * Chỉ post-daily.ts được tăng sau khi post thành công.
+   * Đồng bộ state với group ĐẦU TIÊN thực sự có trong batch.
+   *
+   * Quan trọng:
+   * Nếu các group trước đó đã nằm trong blocked-groups.json,
+   * eligibleGroups có thể bắt đầu ở index lớn hơn state.nextGroupIndex.
+   * Khi đó daily-batch.startGroupIndex sẽ khác state.nextGroupIndex
+   * và post-daily.ts sẽ dừng để tránh đăng nhầm group.
+   *
+   * Việc này KHÔNG tính là đã đăng bài.
+   * post-daily.ts vẫn sẽ tăng nextGroupIndex sau từng bài đăng thành công.
    */
+  state.nextGroupIndex =
+    startGroupIndex;
+
   state.lastPreparedAt =
     new Date().toISOString();
 
